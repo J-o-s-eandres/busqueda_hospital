@@ -1103,7 +1103,8 @@ def api_hospitals():
 @admin_bp.route("/sync", methods=["POST"])
 @login_required
 def sync():
-    require_role("admin")
+    if current_user.role != "admin":
+        return jsonify({"ok": False, "error": "Solo el administrador puede sincronizar"}), 403
     try:
         # 🔧 Verificar que los estatus existen antes de sincronizar
         from .models import seed_estatuses

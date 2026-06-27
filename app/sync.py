@@ -40,10 +40,16 @@ def get_gspread_client():
     import os
     
     # 🔧 PRIMERO: Intentar con el JSON completo
-    service_account_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
+    service_account_json = (
+        os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
+        or os.environ.get("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_JSON")
+    )
     if service_account_json:
         try:
             info = json.loads(service_account_json)
+            # Convertir \n literales a saltos de línea reales en la clave privada
+            if "private_key" in info:
+                info["private_key"] = info["private_key"].replace("\\n", "\n")
             creds = Credentials.from_service_account_info(info, scopes=SCOPES)
             return gspread.authorize(creds)
         except Exception as e:
@@ -53,7 +59,10 @@ def get_gspread_client():
     email = current_app.config.get("GOOGLE_SERVICE_ACCOUNT_EMAIL")
     private_key = current_app.config.get("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY")
     if not email or not private_key:
-        raise RuntimeError("No Google credentials found. Set GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_EMAIL/_PRIVATE_KEY")
+        raise RuntimeError("No Google credentials found. Set GOOGLE_SERVICE_ACCOUNT_JSON / GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_JSON or GOOGLE_SERVICE_ACCOUNT_EMAIL/_PRIVATE_KEY")
+    
+    # Limpiar comillas circundantes y \n literales
+    private_key = private_key.strip('"').strip("'").replace("\\n", "\n")
     
     info = {
         "type": "service_account",
