@@ -66,6 +66,10 @@ def create_app():
     def info(val):
         return val if val and str(val).strip() else "sin información"
 
+    # Telegram bot
+    from .telegram_bot import init_telegram
+    init_telegram(app)
+
     @app.cli.command("create-admin")
     def create_admin():
         """Create the initial admin user (run once on a fresh database)."""
