@@ -13,11 +13,11 @@ login_manager = LoginManager()
 migrate = Migrate()
 
 
-def create_app():
+def create_app(config_obj=None):
 
-    app = Flask(__name__)
+    app = Flask(__name__, instance_relative_config=True)
 
-    app.config.from_object("app.config.Config")
+    app.config.from_object(config_obj or "app.config.Config")
 
     db.init_app(app)
 
@@ -39,10 +39,9 @@ def create_app():
     # Ensure models are imported so migrations see them
     from .models import display_name
 
-    # Scheduler (APScheduler) – runs after app creation
-    from .scheduler import init_scheduler
-
-    init_scheduler(app)
+    if not app.config.get("TESTING"):
+        from .scheduler import init_scheduler
+        init_scheduler(app)
 
     app.register_blueprint(public_bp)
 
@@ -66,9 +65,9 @@ def create_app():
     def info(val):
         return val if val and str(val).strip() else "sin información"
 
-    # Telegram bot
-    from .telegram_bot import init_telegram
-    init_telegram(app)
+    if not app.config.get("TESTING"):
+        from .telegram_bot import init_telegram
+        init_telegram(app)
 
     @app.cli.command("create-admin")
     def create_admin():
