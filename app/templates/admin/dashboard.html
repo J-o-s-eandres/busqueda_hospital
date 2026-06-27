@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="section-header">
+  <h2>Dashboard</h2>
+  <button class="btn btn-info btn-sm" id="syncBtn" onclick="syncWithSheet()">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+      <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+    </svg>
+    Sincronizar con Sheet
+  </button>
+  <a class="btn btn-success btn-sm" href="{{ url_for('admin.export_csv') }}">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+      <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+      <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+    </svg>
+    Exportar CSV
+  </a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card card-stats stat-card">
+      <div class="stat-icon" style="background:#dbeafe;color:#2563eb;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816zM4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275zM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+      </div>
+      <div class="stat-number">{{ counts.persons }}</div>
+      <div class="stat-label">Personas</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card card-stats stat-card">
+      <div class="stat-icon" style="background:#dcfce7;color:#16a34a;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M8.5 5.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3v-3z"/><path d="M2 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H2zm0 1h12v12H2V2z"/></svg>
+      </div>
+      <div class="stat-number">{{ counts.hospitals }}</div>
+      <div class="stat-label">Hospitales</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card card-stats stat-card">
+      <div class="stat-icon" style="background:#fef3c7;color:#f59e0b;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A31.493 31.493 0 0 1 8 14.58a31.481 31.481 0 0 1-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0 1 10 0c0 .862-.305 1.867-.834 2.94zM8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10z"/><path d="M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
+      </div>
+      <div class="stat-number">{{ counts.estados }}</div>
+      <div class="stat-label">Estados</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card card-stats stat-card">
+      <div class="stat-icon" style="background:#e0e7ff;color:#6366f1;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"/></svg>
+      </div>
+      <div class="stat-number">{{ counts.areas }}</div>
+      <div class="stat-label">Áreas</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h6 class="fw-semibold mb-3" style="color:var(--text-secondary);">Personas por estatus</h6>
+      <canvas id="estatusChart"></canvas>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h6 class="fw-semibold mb-3" style="color:var(--text-secondary);">Personas por hospital</h6>
+      <canvas id="hospitalChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h6 class="fw-semibold mb-3" style="color:var(--text-secondary);">Personas por estado</h6>
+      <canvas id="estadoChart"></canvas>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h6 class="fw-semibold mb-3" style="color:var(--text-secondary);">Personas por área</h6>
+      <canvas id="areaChart"></canvas>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const personsPerHospital = {{ persons_per_hospital | tojson }};
+const personsPerEstatus = {{ persons_per_estatus | tojson }};
+const personsPerEstado = {{ persons_per_estado | tojson }};
+const personsPerArea = {{ persons_per_area | tojson }};
+
+function doughnutChart(id, data, colors) {
+  new Chart(document.getElementById(id), {
+    type: "doughnut",
+    data: {
+      labels: data.map(d => d.label),
+      datasets: [{ 
+        data: data.map(d => d.count), 
+        backgroundColor: colors,
+        borderWidth: 0
+      }]
+    },
+    options: { 
+      responsive: true, 
+      plugins: { legend: { position: "bottom" } } 
+    }
+  });
+}
+
+doughnutChart("estatusChart", personsPerEstatus, ["#16a34a", "#f59e0b", "#2563eb", "#dc2626", "#8b5cf6"]);
+doughnutChart("hospitalChart", personsPerHospital, ["#2563eb", "#16a34a", "#f59e0b", "#dc2626", "#8b5cf6", "#06b6d4", "#ec4899", "#f97316"]);
+doughnutChart("estadoChart", personsPerEstado, ["#f59e0b", "#8b5cf6", "#2563eb", "#16a34a", "#dc2626", "#06b6d4", "#ec4899", "#f97316"]);
+doughnutChart("areaChart", personsPerArea, ["#8b5cf6", "#f59e0b", "#2563eb", "#16a34a", "#dc2626", "#06b6d4", "#ec4899", "#f97316"]);
+
+function syncWithSheet() {
+  const btn = document.getElementById("syncBtn");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Sincronizando...`;
+  Swal.fire({
+    title: 'Sincronizando',
+    text: 'Leyendo y escribiendo en Google Sheet...',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+  fetch("/admin/sync", { method: "POST" })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Sincronización completada',
+          html: `<b>${data.imported}</b> importadas · <b>${data.updated}</b> actualizadas · <b>${data.pushed}</b> escritas en sheet`,
+          timer: 3000,
+          timerProgressBar: true
+        }).then(() => location.reload());
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error de sincronización',
+          text: data.error || 'Error desconocido'
+        });
+      }
+    })
+    .catch(err => Swal.fire({ icon: 'error', title: 'Error de red', text: err.message }))
+    .finally(() => {
+      btn.disabled = false;
+      btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg> Sincronizar con Sheet`;
+    });
+}
+</script>
+{% endblock %}

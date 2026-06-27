@@ -1,0 +1,20 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Base de datos local
+instance/
+
+# Git
+.git/
+
+# Variables de entorno
+.env
+
+# IDE
+.vscode/
+.idea/

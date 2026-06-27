@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ "Editar" if user else "Crear" }} Usuario{% endblock %}
+{% block content %}
+<div class="container mt-4" style="max-width: 500px;">
+  <div class="card p-4">
+    <h2 class="mb-4">{{ "Editar" if user else "Crear" }} Usuario</h2>
+    <form method="post">
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        {{ form.username.label(class="form-label") }}
+        {{ form.username(class="form-control", placeholder="Nombre de usuario") }}
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          {{ form.nombre.label(class="form-label") }}
+          {{ form.nombre(class="form-control", placeholder="Nombre") }}
+        </div>
+        <div class="col-md-6 mb-3">
+          {{ form.apellido.label(class="form-label") }}
+          {{ form.apellido(class="form-control", placeholder="Apellido") }}
+        </div>
+      </div>
+      <div class="mb-3">
+        {{ form.role.label(class="form-label") }}
+        {{ form.role(class="form-select") }}
+      </div>
+      <div class="mb-3">
+        {{ form.password.label(class="form-label") }}
+        {% if user %}
+          {{ form.password(class="form-control", placeholder="Optional. Dejar vacío para mantener actual") }}
+          <div class="form-text text-muted">Si no quieres cambiar la contraseña, deja este campo vacío.</div>
+        {% else %}
+          {{ form.password(class="form-control", placeholder="Contraseña del nuevo usuario", required=true) }}
+          <div class="form-text text-muted">Mínimo 4 caracteres.</div>
+        {% endif %}
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">{{ "Actualizar" if user else "Crear" }} Usuario</button>
+        <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

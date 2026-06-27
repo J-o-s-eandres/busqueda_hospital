@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}Carga masiva{% endblock %}
+{% block content %}
+<div class="section-header">
+  <h2>Carga masiva desde Excel</h2>
+  <a href="{{ url_for('admin.persons') }}" class="btn btn-secondary btn-sm">Volver a personas</a>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="card p-4">
+      <h6 class="fw-semibold mb-3">Subir archivo</h6>
+      <form id="uploadForm" method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label class="form-label">Archivo Excel (.xlsx)</label>
+          <input type="file" class="form-control" name="file" id="fileInput" accept=".xlsx,.xls" required>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-info" id="previewBtn" onclick="previewUpload()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm1 0s2.5 4 7 4 7-4 7-4-2.5-4-7-4-7 4-7 4z"/></svg>
+            Previsualizar
+          </button>
+          <button type="submit" class="btn btn-primary" id="confirmBtn" style="display:none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg>
+            Confirmar importación
+          </button>
+        </div>
+      </form>
+      <div id="previewSpinner" class="mt-3 text-center" style="display:none;">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Procesando...</span>
+        </div>
+        <p class="text-secondary mt-2">Analizando archivo...</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card p-4">
+      <h6 class="fw-semibold mb-3">Formato esperado</h6>
+      <p class="text-secondary" style="font-size:0.875rem;">
+        La primera fila debe contener los encabezados. <strong>nombre, apellido y cedula</strong> son obligatorios.
+        Si dos filas tienen la misma <strong>cédula</strong>, se actualiza el registro existente.
+        Los nombres de hospital, área y estatus se guardan en minúsculas y se crean automáticamente si no existen en el catálogo.
+      </p>
+      <table class="table table-sm table-bordered" style="font-size:0.8rem;">
+        <thead>
+          <tr>
+            <th>Columna</th>
+            <th>Descripción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>nombre</td><td>Nombre (obligatorio)</td></tr>
+          <tr><td>apellido</td><td>Apellido (obligatorio)</td></tr>
+          <tr><td>cedula</td><td>Cédula (obligatorio — usar <strong>N</strong> si se desconoce)</td></tr>
+          <tr><td>sexo</td><td>Masculino / Femenino</td></tr>
+          <tr><td>edad</td><td>Número entero</td></tr>
+          <tr><td>telefono</td><td>Teléfono de contacto</td></tr>
+          <tr><td>estado_salud</td><td>Descripción del estado de salud</td></tr>
+          <tr><td>tiene_familiar</td><td><strong>S</strong> o <strong>N</strong></td></tr>
+          <tr><td>nombre_familiar</td><td>Nombre del familiar</td></tr>
+          <tr><td>estatus</td><td>Hospitalizado / Trasladado / Alta / Fallecido / No localizado</td></tr>
+          <tr><td>observaciones</td><td>Notas adicionales</td></tr>
+          <tr><td>estado</td><td>Estado de Venezuela (se crea si no existe)</td></tr>
+          <tr><td>hospital</td><td>Nombre del hospital, mínimo 3 caracteres (se crea si no existe)</td></tr>
+          <tr><td>area</td><td>Área hospitalaria, mínimo 3 caracteres (se crea si no existe)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="previewResults" style="display:none;" class="mt-4">
+  <div class="card p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-semibold mb-0">
+        Vista previa
+        <span class="badge bg-success ms-2" id="validBadge">0 válidos</span>
+        <span class="badge bg-danger ms-1" id="invalidBadge">0 con errores</span>
+      </h5>
+      <span class="text-secondary" id="totalCount">0 registros</span>
+    </div>
+    <div class="table-responsive" style="max-height:400px;overflow-y:auto;">
+      <table class="table table-sm table-bordered" style="font-size:0.8rem;">
+        <thead class="table-light" style="position:sticky;top:0;">
+          <tr>
+            <th>Fila</th>
+            <th>Nombre</th>
+            <th>Apellido</th>
+            <th>Cédula</th>
+            <th>Sexo</th>
+            <th>Edad</th>
+            <th>Teléfono</th>
+            <th>Estatus</th>
+            <th>Estado (Vzla)</th>
+            <th>Hospital</th>
+            <th>Área</th>
+            <th>Validación</th>
+          </tr>
+        </thead>
+        <tbody id="previewBody"></tbody>
+      </table>
+    </div>
+    <div id="errorSummary" class="alert alert-danger mt-3" style="display:none;">
+      <strong>Errores encontrados:</strong> corrige los datos marcados en rojo y vuelve a previsualizar.
+      No se importará nada hasta que todo esté correcto.
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let lastPreviewData = null;
+
+function previewUpload() {
+  const fileInput = document.getElementById('fileInput');
+  const file = fileInput.files[0];
+  if (!file) {
+    Swal.fire({ icon: 'warning', title: 'Selecciona un archivo' });
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  document.getElementById('previewSpinner').style.display = 'block';
+  document.getElementById('previewResults').style.display = 'none';
+  document.getElementById('confirmBtn').style.display = 'none';
+
+  fetch('/admin/api/persons/preview-upload', {
+    method: 'POST',
+    body: formData
+  })
+    .then(r => {
+      if (!r.ok) {
+        return r.json().then(e => { throw new Error(e.error || 'Error del servidor'); });
+      }
+      return r.json();
+    })
+    .then(data => {
+      document.getElementById('previewSpinner').style.display = 'none';
+
+      if (data.error) {
+        Swal.fire({ icon: 'error', title: 'Error', text: data.error });
+        return;
+      }
+
+      lastPreviewData = data;
+      renderPreview(data);
+    })
+    .catch(err => {
+      document.getElementById('previewSpinner').style.display = 'none';
+      Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'Error de conexión' });
+    });
+}
+
+function renderPreview(data) {
+  document.getElementById('previewResults').style.display = 'block';
+  document.getElementById('validBadge').textContent = data.valid_count + ' válidos';
+  document.getElementById('invalidBadge').textContent = data.invalid_count + ' con errores';
+  document.getElementById('totalCount').textContent = 'Total: ' + data.total + ' registros';
+
+  const tbody = document.getElementById('previewBody');
+  tbody.innerHTML = '';
+
+  data.rows.forEach(r => {
+    const tr = document.createElement('tr');
+    if (!r.valid) tr.classList.add('table-danger');
+
+    const errorsHtml = r.errors.length
+      ? '<span class="text-danger" title="' + r.errors.join('; ') + '">' +
+        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8 4a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 0 1.1 0l.35-3.507A.905.905 0 0 0 8 4zm.002 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/></svg> ' +
+        r.errors.join('; ') + '</span>'
+      : '<span class="text-success"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg> OK</span>';
+
+    tr.innerHTML =
+      '<td>' + r.row + '</td>' +
+      '<td>' + escapeHtml(r.nombre) + '</td>' +
+      '<td>' + escapeHtml(r.apellido) + '</td>' +
+      '<td>' + escapeHtml(r.cedula) + '</td>' +
+      '<td>' + escapeHtml(r.sexo) + '</td>' +
+      '<td>' + escapeHtml(r.edad) + '</td>' +
+      '<td>' + escapeHtml(r.telefono) + '</td>' +
+      '<td>' + escapeHtml(r.estatus) + '</td>' +
+      '<td>' + escapeHtml(r.estado) + '</td>' +
+      '<td>' + escapeHtml(r.hospital) + '</td>' +
+      '<td>' + escapeHtml(r.area) + '</td>' +
+      '<td>' + errorsHtml + '</td>';
+
+    tbody.appendChild(tr);
+  });
+
+  if (data.has_errors) {
+    document.getElementById('errorSummary').style.display = 'block';
+    document.getElementById('confirmBtn').style.display = 'none';
+  } else {
+    document.getElementById('errorSummary').style.display = 'none';
+    document.getElementById('confirmBtn').style.display = 'inline-block';
+  }
+}
+
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+  if (!lastPreviewData || lastPreviewData.has_errors) {
+    e.preventDefault();
+    Swal.fire({ icon: 'warning', title: 'Previsualiza primero',
+      text: 'Usa el botón "Previsualizar" para validar el archivo antes de importar.' });
+    return;
+  }
+});
+
+document.getElementById('confirmBtn').addEventListener('click', function(e) {
+  e.preventDefault();
+  if (!lastPreviewData || lastPreviewData.has_errors) return;
+
+  Swal.fire({
+    title: '¿Confirmar importación?',
+    html: '<strong>' + lastPreviewData.valid_count + '</strong> registros serán importados.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Sí, importar',
+    cancelButtonText: 'Cancelar'
+  }).then(result => {
+    if (result.isConfirmed) {
+      document.getElementById('uploadForm').submit();
+    }
+  });
+});
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ "Editar" if person else "Crear" }} Persona{% endblock %}
+{% block content %}
+<div class="container mt-4" style="max-width: 700px;">
+  <h2>{{ "Editar" if person else "Crear" }} Persona</h2>
+  <form method="post">
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Nombre *</label>
+        <input type="text" class="form-control" name="nombre" value="{{ person.nombre if person else '' }}" required>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Apellido</label>
+        <input type="text" class="form-control" name="apellido" value="{{ person.apellido if person else '' }}">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Cédula</label>
+        <input type="text" class="form-control" name="cedula" value="{{ person.cedula if person else '' }}">
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Edad</label>
+        <input type="number" class="form-control" name="edad" value="{{ person.edad if person else '' }}">
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Sexo</label>
+        <select class="form-control" name="sexo">
+          <option value="">--</option>
+          <option value="Masculino" {{ "selected" if person and person.sexo == "Masculino" }}>Masculino</option>
+          <option value="Femenino" {{ "selected" if person and person.sexo == "Femenino" }}>Femenino</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Teléfono</label>
+        <input type="text" class="form-control" name="telefono" value="{{ person.telefono if person else '' }}">
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Estado (Venezuela)</label>
+        <select class="form-control" name="estado_id">
+          <option value="">--</option>
+          {% for e in estados %}
+          <option value="{{ e.id }}" {{ "selected" if person and person.estado_id == e.id }}>{{ e.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Hospital</label>
+        <select class="form-control" name="hospital_id">
+          <option value="">--</option>
+          {% for h in hospitals %}
+          <option value="{{ h.id }}" {{ "selected" if person and person.hospital_id == h.id }}>{{ display_name(h.nombre) }}</option>
+          {% endfor %}
+        </select>
+        <a href="{{ url_for('admin.hospital_new') }}" class="small text-decoration-none" target="_blank">+ Nuevo hospital</a>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Área</label>
+        <select class="form-control" name="area_id">
+          <option value="">--</option>
+          {% for a in areas %}
+          <option value="{{ a.id }}" {{ "selected" if person and person.area_id == a.id }}>{{ display_name(a.nombre) }}</option>
+          {% endfor %}
+        </select>
+        <a href="{{ url_for('admin.area_new') }}" class="small text-decoration-none" target="_blank">+ Nueva área</a>
+      </div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Estado de salud</label>
+      <textarea class="form-control" name="estado_salud" rows="2">{{ person.estado_salud if person else '' }}</textarea>
+    </div>
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" name="tiene_familiar" id="tiene_familiar" {{ "checked" if person and person.tiene_familiar }}>
+          <label class="form-check-label" for="tiene_familiar">Tiene familiar</label>
+        </div>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label">Nombre del familiar</label>
+        <input type="text" class="form-control" name="nombre_familiar" value="{{ person.nombre_familiar if person else '' }}">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Estatus</label>
+        <select class="form-control" name="estatus">
+          {% for s in estatuses %}
+          <option value="{{ s.nombre }}" {{ "selected" if person and person.estatus == s.nombre }}>{{ display_name(s.nombre) }}</option>
+          {% endfor %}
+        </select>
+        <a href="{{ url_for('admin.estatus_new') }}" class="small text-decoration-none" target="_blank">+ Nuevo estatus</a>
+      </div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Observaciones</label>
+      <textarea class="form-control" name="observaciones" rows="2">{{ person.observaciones if person else '' }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a href="{{ url_for('admin.persons') }}" class="btn btn-secondary ms-2">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+__pycache__
+*.pyc
+venv
+.git
+.gitignore
+.env
+*.xlsx
+~$*
+flask.log
+README.md
+developer.md
+pendientes.txt
+nul
+instance/

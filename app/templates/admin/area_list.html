@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Áreas{% endblock %}
+{% block content %}
+<div class="section-header">
+  <h2>Áreas</h2>
+  <a href="{{ url_for('admin.area_new') }}" class="btn btn-success btn-sm">+ Nueva área</a>
+</div>
+<div class="table-responsive">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in items %}
+      <tr>
+        <td>{{ a.id }}</td>
+        <td>{{ fmt(a.nombre) }}</td>
+        <td style="white-space:nowrap;">
+          <a href="{{ url_for('admin.area_edit', item_id=a.id) }}" class="btn btn-primary btn-sm">Editar</a>
+          {% if current_user.role == "admin" %}
+          <button class="btn btn-danger btn-sm" onclick="confirmDelete({{ a.id }}, '{{ a.nombre }}', 'area')">Eliminar</button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function confirmDelete(id, name, type) {
+  Swal.fire({
+    title: '¿Eliminar ' + name + '?',
+    text: 'Esta acción no se puede deshacer',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  }).then(result => {
+    if (result.isConfirmed) window.location.href = '/admin/' + type + 's/' + id + '/delete';
+  });
+}
+</script>
+{% endblock %}

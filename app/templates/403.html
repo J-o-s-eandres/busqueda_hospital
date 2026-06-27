@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Acceso denegado{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-6 text-center">
+    <h1 class="display-1 text-danger fw-bold">403</h1>
+    <p class="fs-5 text-secondary">No tienes permisos para acceder a esta sección.</p>
+    <a href="{{ url_for('public.search') }}" class="btn btn-primary">Volver al inicio</a>
+  </div>
+</div>
+{% endblock %}

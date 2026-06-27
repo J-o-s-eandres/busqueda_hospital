@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}Buscar pacientes{% endblock %}
+{% block content %}
+<h2 class="page-title">Buscar pacientes</h2>
+
+<div class="filter-card">
+  <form id="filter-form" class="row g-2 align-items-end">
+    <div class="col-md-3 col-12">
+      <label class="form-label" for="filter-nombre">Nombre o apellido</label>
+      <input type="text" class="form-control" name="nombre" id="filter-nombre" placeholder="Escribe para buscar...">
+    </div>
+    <div class="col-md-3 col-12">
+      <label class="form-label" for="filter-estado">Estado</label>
+      <select class="form-select" name="estado_id" id="filter-estado">
+        <option value="">Todos los estados</option>
+        {% for e in estados %}
+        <option value="{{ e.id }}">{{ fmt(e.nombre) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3 col-12">
+      <label class="form-label" for="filter-hospital">Hospital</label>
+      <select class="form-select" name="hospital_id" id="filter-hospital">
+        <option value="">Todos los hospitales</option>
+      </select>
+    </div>
+    <div class="col-md-3 col-12">
+      <label class="form-label" for="filter-area">Área</label>
+      <select class="form-select" name="area_id" id="filter-area">
+        <option value="">Todas las áreas</option>
+        {% for a in areas %}
+        <option value="{{ a.id }}">{{ fmt(a.nombre) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 text-end mt-2">
+      <button type="reset" class="btn btn-secondary btn-sm">Limpiar filtros</button>
+    </div>
+  </form>
+</div>
+
+<!-- Desktop: Tabla -->
+<div class="table-responsive d-none d-md-block">
+  <table id="persons-table" class="table table-hover">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Apellido</th>
+        <th>Cédula</th>
+        <th>Edad</th>
+        <th>Sexo</th>
+        <th>Estado</th>
+        <th>Hospital</th>
+        <th>Área</th>
+        <th>Estado Salud</th>
+        <th>Estatus</th>
+        <th>Familiar</th>
+        <th>Teléfono</th>
+        <th>Observaciones</th>
+        <th>Registro</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Mobile: Tarjetas -->
+<div class="d-md-none" id="mobile-results">
+  <div class="text-center py-3" id="mobile-loading">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+  <div id="mobile-cards"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<script>
+$(document).ready(function(){
+  var table = $('#persons-table').DataTable({
+    ajax: {
+      url: '{{ url_for("public.api_persons") }}',
+      dataSrc: ''
+    },
+    columns: [
+      { data: 'nombre' },
+      { data: 'apellido' },
+      { data: 'cedula' },
+      { data: 'edad' },
+      { data: 'sexo' },
+      { data: 'estado' },
+      { data: 'hospital' },
+      { data: 'area' },
+      { data: 'estado_salud' },
+      { data: 'estatus' },
+      { data: 'tiene_familiar' },
+      { data: 'telefono' },
+      { data: 'observaciones' },
+      { data: 'fecha_registro' }
+    ],
+    responsive: true,
+    order: [[13, 'desc']],
+    language: { url: '//cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+    drawCallback: function() {
+      renderMobileCards();
+    }
+  });
+
+  function renderMobileCards() {
+    var data = table.rows().data();
+    var $container = $('#mobile-cards');
+    $container.empty();
+    
+    if (data.length === 0) {
+      $container.html('<div class="text-center py-4"><p class="text-muted">No se encontraron resultados</p></div>');
+      $('#mobile-loading').hide();
+      return;
+    }
+    
+    data.each(function(row) {
+      var card = `
+        <div class="card mb-3 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <h5 class="card-title mb-1">${row.nombre} ${row.apellido}</h5>
+              <span class="badge ${getStatusBadge(row.estatus)}">${row.estatus}</span>
+            </div>
+            <div class="row mt-2">
+              <div class="col-6"><small class="text-muted">Cédula:</small> ${row.cedula}</div>
+              <div class="col-6"><small class="text-muted">Edad:</small> ${row.edad}</div>
+              <div class="col-6"><small class="text-muted">Sexo:</small> ${row.sexo}</div>
+              <div class="col-6"><small class="text-muted">Registro:</small> ${row.fecha_registro}</div>
+              <div class="col-12"><small class="text-muted">Estado:</small> ${row.estado}</div>
+              <div class="col-12"><small class="text-muted">Hospital:</small> ${row.hospital}</div>
+              <div class="col-12"><small class="text-muted">Área:</small> ${row.area}</div>
+              <div class="col-12"><small class="text-muted">Estado Salud:</small> ${row.estado_salud}</div>
+              <div class="col-6"><small class="text-muted">Familiar:</small> ${row.tiene_familiar}</div>
+              <div class="col-6"><small class="text-muted">Teléfono:</small> ${row.telefono}</div>
+              ${row.observaciones ? `<div class="col-12"><small class="text-muted">Observaciones:</small> ${row.observaciones}</div>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+      $container.append(card);
+    });
+    $('#mobile-loading').hide();
+  }
+
+  function getStatusBadge(estatus) {
+    switch(estatus) {
+      case 'hospitalizado': return 'bg-warning text-dark';
+      case 'trasladado': return 'bg-info text-white';
+      case 'alta': return 'bg-success text-white';
+      case 'fallecido': return 'bg-danger text-white';
+      case 'no localizado': return 'bg-secondary text-white';
+      default: return 'bg-secondary text-white';
+    }
+  }
+
+  // Filtros (igual que antes)
+  $('#filter-nombre, #filter-estado, #filter-area').on('change keyup', function(){
+    table.ajax.url('{{ url_for("public.api_persons") }}?' + $('#filter-form').serialize()).load();
+  });
+
+  $('#filter-estado').on('change', function(){
+    var estadoId = $(this).val();
+    var $hospital = $('#filter-hospital');
+    $hospital.html('<option value="">Cargando...</option>');
+    $.get('{{ url_for("admin.api_hospitals") }}', { estado_id: estadoId }, function(data){
+      $hospital.html('<option value="">Todos los hospitales</option>');
+      data.forEach(function(h){
+        var name = h.nombre.charAt(0).toUpperCase() + h.nombre.slice(1);
+        $hospital.append('<option value="' + h.id + '">' + name + '</option>');
+      });
+    });
+  });
+
+  $('#filter-hospital').on('change', function(){
+    table.ajax.url('{{ url_for("public.api_persons") }}?' + $('#filter-form').serialize()).load();
+  });
+
+  $('button[type="reset"]').on('click', function(e){
+    e.preventDefault();
+    $('#filter-form')[0].reset();
+    $('#filter-hospital').html('<option value="">Todos los hospitales</option>');
+    table.ajax.url('{{ url_for("public.api_persons") }}').load();
+  });
+});
+</script>
+
+<style>
+  /* Estilos para las tarjetas en móvil */
+  @media (max-width: 767.98px) {
+    .card {
+      border-radius: 12px;
+      border: none;
+    }
+    .card .badge {
+      font-size: 0.75rem;
+      padding: 0.35rem 0.65rem;
+    }
+    .card .row [class*="col-"] {
+      padding-top: 0.15rem;
+      padding-bottom: 0.15rem;
+    }
+    .filter-card .form-label {
+      font-size: 0.85rem;
+    }
+  }
+</style>
+{% endblock %}

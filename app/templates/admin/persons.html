@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block title %}Personas{% endblock %}
+{% block content %}
+<div class="section-header">
+  <h2>Personas Registradas</h2>
+  {% if current_user.role != "viewer" %}
+  <a href="{{ url_for('admin.person_form') }}" class="btn btn-success btn-sm">+ Nueva persona</a>
+  <a href="{{ url_for('admin.upload_persons') }}" class="btn btn-primary btn-sm">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/></svg>
+    Carga masiva
+  </a>
+  {% endif %}
+</div>
+<div class="table-responsive">
+  <table class="table" id="persons-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Apellido</th>
+        <th>Cédula</th>
+        <th>Edad</th>
+        <th>Sexo</th>
+        <th>Teléfono</th>
+        <th>Estado</th>
+        <th>Hospital</th>
+        <th>Área</th>
+        <th>Estatus</th>
+        <th>Familiar</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in persons %}
+      <tr>
+        <td>{{ p.id }}</td>
+        <td><strong>{{ p.nombre }}</strong></td>
+        <td>{{ info(p.apellido) }}</td>
+        <td>{{ info(p.cedula) }}</td>
+        <td>{{ info(p.edad) }}</td>
+        <td>{{ info(p.sexo) }}</td>
+        <td>{{ info(p.telefono) }}</td>
+        <td>{{ fmt(p.estado.nombre) if p.estado else info("") }}</td>
+        <td>{{ fmt(p.hospital.nombre) if p.hospital else info("") }}</td>
+        <td>{{ fmt(p.area.nombre) if p.area else info("") }}</td>
+        <td>
+          {% set estatus_colors = {"hospitalizado": "primary", "trasladado": "warning", "alta": "success", "fallecido": "danger", "no localizado": "secondary"} %}
+          <span class="badge bg-{{ estatus_colors.get(p.estatus, 'secondary') }}">{{ display_name(p.estatus) if p.estatus else info("") }}</span>
+        </td>
+        <td>{{ "Sí" if p.tiene_familiar else "No" }}</td>
+        <td style="white-space:nowrap;">
+          {% if current_user.role != "viewer" %}
+          <button class="btn btn-primary btn-sm" onclick="openEdit({{ p.id }})">Editar</button>
+          {% endif %}
+          {% if current_user.role != "viewer" %}
+          <button class="btn btn-danger btn-sm" onclick="confirmDelete({{ p.id }}, '{{ p.nombre }}', 'person')">Eliminar</button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Editar persona</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editForm" method="post">
+        <div class="modal-body" style="max-height:65vh;overflow-y:auto;">
+          <input type="hidden" name="person_id" id="edit-person_id">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Nombre *</label>
+              <input type="text" class="form-control" name="nombre" id="edit-nombre" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Apellido</label>
+              <input type="text" class="form-control" name="apellido" id="edit-apellido">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Cédula</label>
+              <input type="text" class="form-control" name="cedula" id="edit-cedula">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Edad</label>
+              <input type="number" class="form-control" name="edad" id="edit-edad">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Sexo</label>
+              <select class="form-select" name="sexo" id="edit-sexo">
+                <option value="">--</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Femenino">Femenino</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" name="telefono" id="edit-telefono">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Estado (Venezuela)</label>
+              <select class="form-select" name="estado_id" id="edit-estado_id" onchange="loadHospitalsModal()">
+                <option value="">--</option>
+                {% for e in estados %}
+                <option value="{{ e.id }}">{{ e.nombre }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Hospital</label>
+              <select class="form-select" name="hospital_id" id="edit-hospital_id">
+                <option value="">--</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Área</label>
+              <select class="form-select" name="area_id" id="edit-area_id">
+                <option value="">--</option>
+                {% for a in areas %}
+                <option value="{{ a.id }}">{{ a.nombre }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Estado de salud</label>
+            <textarea class="form-control" name="estado_salud" id="edit-estado_salud" rows="2"></textarea>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" name="tiene_familiar" id="edit-tiene_familiar">
+                <label class="form-check-label" for="edit-tiene_familiar">Tiene familiar</label>
+              </div>
+            </div>
+            <div class="col-md-8 mb-3">
+              <label class="form-label">Nombre del familiar</label>
+              <input type="text" class="form-control" name="nombre_familiar" id="edit-nombre_familiar">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Estatus</label>
+              <select class="form-select" name="estatus" id="edit-estatus">
+                {% for s in estatuses %}
+                <option value="{{ s.nombre }}">{{ display_name(s.nombre) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Observaciones</label>
+            <textarea class="form-control" name="observaciones" id="edit-observaciones" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(id, name, type) {
+  Swal.fire({
+    title: '¿Eliminar ' + name + '?',
+    text: 'Esta acción no se puede deshacer',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  }).then(result => {
+    if (result.isConfirmed) {
+      window.location.href = '/admin/' + type + 's/' + id + '/delete';
+    }
+  });
+}
+
+function cap(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function loadHospitalsModal() {
+  const estadoId = document.getElementById('edit-estado_id').value;
+  const sel = document.getElementById('edit-hospital_id');
+  sel.innerHTML = '<option value="">--</option>';
+  if (!estadoId) return;
+  fetch('/admin/api/hospitals?estado_id=' + estadoId)
+    .then(r => r.json())
+    .then(data => {
+      data.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = h.id;
+        opt.textContent = cap(h.nombre);
+        sel.appendChild(opt);
+      });
+    });
+}
+
+function openEdit(personId) {
+  fetch('/admin/api/persons/' + personId)
+    .then(r => r.json())
+    .then(p => {
+      document.getElementById('edit-person_id').value = p.id;
+      document.getElementById('edit-nombre').value = p.nombre || '';
+      document.getElementById('edit-apellido').value = p.apellido || '';
+      document.getElementById('edit-cedula').value = p.cedula || '';
+      document.getElementById('edit-edad').value = p.edad || '';
+      document.getElementById('edit-sexo').value = p.sexo || '';
+      document.getElementById('edit-telefono').value = p.telefono || '';
+      document.getElementById('edit-estado_id').value = p.estado_id || '';
+      document.getElementById('edit-estado_salud').value = p.estado_salud || '';
+      document.getElementById('edit-tiene_familiar').checked = p.tiene_familiar;
+      document.getElementById('edit-nombre_familiar').value = p.nombre_familiar || '';
+      document.getElementById('edit-estatus').value = p.estatus || 'hospitalizado';
+      document.getElementById('edit-observaciones').value = p.observaciones || '';
+
+      loadHospitalsModal();
+      setTimeout(() => {
+        document.getElementById('edit-hospital_id').value = p.hospital_id || '';
+        document.getElementById('edit-area_id').value = p.area_id || '';
+      }, 100);
+
+      new bootstrap.Modal(document.getElementById('editModal')).show();
+    });
+}
+
+document.getElementById('editForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const personId = document.getElementById('edit-person_id').value;
+  const formData = new FormData(this);
+
+  fetch('/admin/api/persons/' + personId + '/edit', {
+    method: 'POST',
+    body: new URLSearchParams(formData)
+  }).then(r => r.json()).then(data => {
+    if (data.ok) {
+      Swal.fire({ icon: 'success', title: 'Guardado', timer: 1500, showConfirmButton: false });
+      bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+      setTimeout(() => location.reload(), 500);
+    } else {
+      Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'Error al guardar' });
+    }
+  }).catch(() => {
+    Swal.fire({ icon: 'error', title: 'Error de conexión' });
+  });
+});
+</script>
+{% endblock %}

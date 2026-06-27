@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Registro de actividades{% endblock %}
+{% block content %}
+<div class="section-header">
+  <h2>Registro de actividades</h2>
+</div>
+<div class="table-responsive">
+  <table class="table" id="logs-table">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Usuario</th>
+        <th>Acción</th>
+        <th>Tipo</th>
+        <th>Detalle</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in pagination.items %}
+      <tr>
+        <td class="text-secondary" style="white-space:nowrap;">{{ log.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+        <td><strong>{{ log.username }}</strong></td>
+        <td>
+          {% if log.action == "create" %}
+            <span class="badge bg-success">Crear</span>
+          {% elif log.action == "update" %}
+            <span class="badge bg-primary">Editar</span>
+          {% elif log.action == "delete" %}
+            <span class="badge bg-danger">Eliminar</span>
+          {% elif log.action == "import" %}
+            <span class="badge bg-info text-dark">Importar</span>
+          {% else %}
+            <span class="badge bg-secondary">{{ log.action }}</span>
+          {% endif %}
+        </td>
+        <td>{{ log.target_type }}</td>
+        <td>{{ log.details or "" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if pagination.pages > 1 %}
+<nav>
+  <ul class="pagination">
+    {% for p in pagination.iter_pages() %}
+      {% if p %}
+        <li class="page-item {{ 'active' if p == pagination.page }}">
+          <a class="page-link" href="{{ url_for('admin.logs', page=p) }}">{{ p }}</a>
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Usuarios{% endblock %}
+{% block content %}
+<div class="section-header">
+  <h2>Usuarios</h2>
+  {% if current_user.role == "admin" %}
+  <a href="{{ url_for('admin.user_form') }}" class="btn btn-success btn-sm">+ Nuevo usuario</a>
+  {% endif %}
+</div>
+<div class="table-responsive">
+  <table class="table" id="users-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Usuario</th>
+        <th>Nombre</th>
+        <th>Apellido</th>
+        <th>Rol</th>
+        <th>Activo</th>
+        <th>Creado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.id }}</td>
+        <td><strong>{{ u.username }}</strong></td>
+        <td>{{ u.nombre or "" }}</td>
+        <td>{{ u.apellido or "" }}</td>
+        <td>
+          {% if u.role == "admin" %}
+            <span class="badge bg-primary">Administrador</span>
+          {% elif u.role == "viewer" %}
+            <span class="badge bg-secondary">Solo vista</span>
+          {% else %}
+            <span class="badge bg-info text-dark">Ayudante</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if u.active %}
+            <span class="text-success fw-semibold">Sí</span>
+          {% else %}
+            <span class="text-danger fw-semibold">No</span>
+          {% endif %}
+        </td>
+        <td class="text-secondary">{{ u.created_at.strftime("%Y-%m-%d %H:%M") if u.created_at else "" }}</td>
+        <td>
+          {% if current_user.role == "admin" %}
+          <a href="{{ url_for('admin.user_form', user_id=u.id) }}" class="btn btn-primary btn-sm">Editar</a>
+          <button class="btn btn-danger btn-sm" onclick="confirmDelete({{ u.id }}, '{{ u.username }}', 'user')">Eliminar</button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function confirmDelete(id, name, type) {
+  Swal.fire({
+    title: '¿Eliminar ' + name + '?',
+    text: 'Esta acción no se puede deshacer',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  }).then(result => {
+    if (result.isConfirmed) {
+      window.location.href = '/admin/' + type + 's/' + id + '/delete';
+    }
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Buscador Hospitalario{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-..." crossorigin="anonymous">
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='venezuela-flag.svg') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="{{ url_for('public.index') }}">
+        <img src="{{ url_for('static', filename='venezuela-flag.svg') }}" alt="Venezuela" width="24" height="16" class="me-2" style="border-radius:2px;object-fit:cover;">
+        Búsqueda Hospitalaria
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto align-items-lg-center">
+          <li class="nav-item">
+            <a class="nav-link {{ 'active' if request.endpoint and 'public' in request.endpoint }}" href="{{ url_for('public.search') }}">Buscar</a>
+          </li>
+          {% if current_user.is_authenticated %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle {{ 'active' if request.endpoint and 'admin' in request.endpoint }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Admin
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item {{ 'active' if request.endpoint == 'admin.dashboard' }}" href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+                <li><a class="dropdown-item {{ 'active' if request.endpoint == 'admin.persons' }}" href="{{ url_for('admin.persons') }}">Personas</a></li>
+                {% if current_user.role != "viewer" %}
+                <li><a class="dropdown-item {{ 'active' if request.endpoint == 'admin.upload_persons' }}" href="{{ url_for('admin.upload_persons') }}">Carga masiva</a></li>
+                {% endif %}
+                <li><hr class="dropdown-divider"></li>
+                <li class="dropdown-header text-muted small">Catálogos</li>
+                <li><a class="dropdown-item {{ 'active' if request.endpoint in ('admin.hospitals','admin.hospital_new','admin.hospital_edit') }}" href="{{ url_for('admin.hospitals') }}">Hospitales</a></li>
+                <li><a class="dropdown-item {{ 'active' if request.endpoint in ('admin.areas','admin.area_new','admin.area_edit') }}" href="{{ url_for('admin.areas') }}">Áreas</a></li>
+                <li><a class="dropdown-item {{ 'active' if request.endpoint in ('admin.estatuses','admin.estatus_new','admin.estatus_edit') }}" href="{{ url_for('admin.estatuses') }}">Estatus</a></li>
+                {% if current_user.role == "admin" %}
+                <li><a class="dropdown-item {{ 'active' if request.endpoint == 'admin.users' }}" href="{{ url_for('admin.users') }}">Usuarios</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('admin.export_csv') }}">Exportar CSV</a></li>
+                <li><a class="dropdown-item {{ 'active' if request.endpoint == 'admin.logs' }}" href="{{ url_for('admin.logs') }}">Actividades</a></li>
+                {% endif %}
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
+              </ul>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link {{ 'active' if request.endpoint == 'auth.login' }}" href="{{ url_for('auth.login') }}">Ingresar</a>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'info' }} alert-dismissible fade show shadow-sm" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+
+  <footer class="footer mt-5 py-5 border-top">
+    <div class="container">
+      <div class="text-center">
+        <h5 class="fw-bold mb-3">🇻🇪 Búsqueda Hospitalaria Venezuela</h5>
+        <p class="mb-1" style="font-size:1.05rem;line-height:1.7;max-width:720px;margin-left:auto;margin-right:auto;">
+          Iniciativa ciudadana, voluntaria y sin fines de lucro para ayudar a localizar a las personas desaparecidas tras el terremoto de 2026.
+        </p>
+        <p class="mb-3" style="font-size:1.05rem;line-height:1.7;">
+          <strong>¿Buscas a un desaparecido?</strong> Ingresa su nombre y apellido en
+          <a href="https://venezuelatebusca.com/" target="_blank" rel="noopener" class="fw-semibold">VenezuelaTeBusca.com</a>
+          para consultar la base de datos nacional.
+        </p>
+        <p class="text-muted mb-4" style="font-size:0.95rem;line-height:1.7;max-width:700px;margin-left:auto;margin-right:auto;">
+          No vendemos ni compartimos tu información con terceros. Solo la usamos para ayudar a localizar personas. Los datos publicados son responsabilidad de quien los envía; verifícalos antes de difundirlos.
+        </p>
+        <h6 class="fw-bold mb-2">Teléfonos de emergencia</h6>
+        <p class="mb-4" style="font-size:1.05rem;">
+          <span class="mx-2"><strong>911</strong> · Movistar</span>
+          <span class="mx-2"><strong>112</strong> · Digitel</span>
+          <span class="mx-2"><strong>*1</strong> · Movilnet</span>
+          <span class="mx-2"><strong>171</strong> · CANTV fijo</span>
+        </p>
+        <p class="text-muted mb-0" style="font-size:0.95rem;">&copy; 2026 Búsqueda Hospitalaria Venezuela</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-..." crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
