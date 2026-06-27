@@ -28,5 +28,7 @@ jobs:
           pip install pytest
 
       - name: Run tests
+        env:
+          PYTHONPATH: .
         run: |
-          pytest -v --tb=short
+          python -m pytest -v --tb=short
