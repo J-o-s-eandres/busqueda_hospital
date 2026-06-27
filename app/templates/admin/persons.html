@@ -11,6 +11,43 @@
   </a>
   {% endif %}
 </div>
+
+<div class="filter-card">
+  <form id="filter-form" class="row g-2 align-items-end">
+    <div class="col-md-3 col-12">
+      <label class="form-label" for="filter-nombre">Nombre o apellido</label>
+      <input type="text" class="form-control" name="nombre" id="filter-nombre" placeholder="Escribe para buscar...">
+    </div>
+    <div class="col-md-3 col-12">
+      <label class="form-label" for="filter-estado">Estado</label>
+      <select class="form-select" name="estado_id" id="filter-estado">
+        <option value="">Todos los estados</option>
+        {% for e in estados %}
+        <option value="{{ e.id }}">{{ fmt(e.nombre) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3 col-12">
+      <label class="form-label" for="filter-hospital">Hospital</label>
+      <select class="form-select" name="hospital_id" id="filter-hospital">
+        <option value="">Todos los hospitales</option>
+      </select>
+    </div>
+    <div class="col-md-3 col-12">
+      <label class="form-label" for="filter-area">Área</label>
+      <select class="form-select" name="area_id" id="filter-area">
+        <option value="">Todas las áreas</option>
+        {% for a in areas %}
+        <option value="{{ a.id }}">{{ fmt(a.nombre) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 text-end mt-2">
+      <button type="reset" class="btn btn-secondary btn-sm">Limpiar filtros</button>
+    </div>
+  </form>
+</div>
+
 <div class="table-responsive">
   <table class="table" id="persons-table">
     <thead>
@@ -30,35 +67,7 @@
         <th>Acciones</th>
       </tr>
     </thead>
-    <tbody>
-      {% for p in persons %}
-      <tr>
-        <td>{{ p.id }}</td>
-        <td><strong>{{ p.nombre }}</strong></td>
-        <td>{{ info(p.apellido) }}</td>
-        <td>{{ info(p.cedula) }}</td>
-        <td>{{ info(p.edad) }}</td>
-        <td>{{ info(p.sexo) }}</td>
-        <td>{{ info(p.telefono) }}</td>
-        <td>{{ fmt(p.estado.nombre) if p.estado else info("") }}</td>
-        <td>{{ fmt(p.hospital.nombre) if p.hospital else info("") }}</td>
-        <td>{{ fmt(p.area.nombre) if p.area else info("") }}</td>
-        <td>
-          {% set estatus_colors = {"hospitalizado": "primary", "trasladado": "warning", "alta": "success", "fallecido": "danger", "no localizado": "secondary"} %}
-          <span class="badge bg-{{ estatus_colors.get(p.estatus, 'secondary') }}">{{ display_name(p.estatus) if p.estatus else info("") }}</span>
-        </td>
-        <td>{{ "Sí" if p.tiene_familiar else "No" }}</td>
-        <td style="white-space:nowrap;">
-          {% if current_user.role != "viewer" %}
-          <button class="btn btn-primary btn-sm" onclick="openEdit({{ p.id }})">Editar</button>
-          {% endif %}
-          {% if current_user.role != "viewer" %}
-          <button class="btn btn-danger btn-sm" onclick="confirmDelete({{ p.id }}, '{{ p.nombre }}', 'person')">Eliminar</button>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
+    <tbody></tbody>
   </table>
 </div>
 
@@ -174,7 +183,105 @@
 {% endblock %}
 
 {% block scripts %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
+var table;
+
+$(document).ready(function(){
+  var estatusColors = {"hospitalizado": "primary", "trasladado": "warning", "alta": "success", "fallecido": "danger", "no localizado": "secondary"};
+
+  table = $('#persons-table').DataTable({
+    ajax: {
+      url: '{{ url_for("admin.api_persons_list") }}',
+      data: function(d) {
+        var params = $('#filter-form').serializeArray();
+        params.forEach(function(p) { d[p.name] = p.value; });
+      },
+      dataSrc: ''
+    },
+    columns: [
+      { data: 'id' },
+      { data: 'nombre' },
+      { data: 'apellido' },
+      { data: 'cedula' },
+      { data: 'edad' },
+      {
+        data: 'sexo',
+        render: function(data) {
+          return data || 'No indicado';
+        }
+      },
+      { data: 'telefono' },
+      {
+        data: 'estado',
+        render: function(data) {
+          return data || 'Estado no especificado';
+        }
+      },
+      { data: 'hospital' },
+      { data: 'area' },
+      {
+        data: 'estatus',
+        render: function(data) {
+          if (!data) return '<span class="badge bg-secondary">sin información</span>';
+          var color = estatusColors[data] || 'secondary';
+          return '<span class="badge bg-' + color + '">' + cap(data) + '</span>';
+        }
+      },
+      { data: 'tiene_familiar' },
+      {
+        data: null,
+        render: function(data) {
+          var html = '';
+          {% if current_user.role != "viewer" %}
+          html += '<button class="btn btn-primary btn-sm me-1" onclick="openEdit(' + data.id + ')">Editar</button>';
+          html += '<button class="btn btn-danger btn-sm" onclick="confirmDelete(' + data.id + ', \'' + escName(data.nombre) + '\', \'person\')">Eliminar</button>';
+          {% endif %}
+          return html;
+        }
+      }
+    ],
+    order: [[0, 'desc']],
+    pageLength: 25,
+    language: { url: '//cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' }
+  });
+
+  $('#filter-nombre, #filter-estado, #filter-area').on('change keyup', function(){
+    table.ajax.reload();
+  });
+
+  $('#filter-estado').on('change', function(){
+    var estadoId = $(this).val();
+    var $hospital = $('#filter-hospital');
+    $hospital.html('<option value="">Cargando...</option>');
+    $.get('{{ url_for("admin.api_hospitals") }}', { estado_id: estadoId }, function(data){
+      $hospital.html('<option value="">Todos los hospitales</option>');
+      data.forEach(function(h){
+        $hospital.append('<option value="' + h.id + '">' + cap(h.nombre) + '</option>');
+      });
+      table.ajax.reload();
+    });
+  });
+
+  $('#filter-hospital').on('change', function(){
+    table.ajax.reload();
+  });
+
+  $('button[type="reset"]').on('click', function(e){
+    e.preventDefault();
+    $('#filter-form')[0].reset();
+    $('#filter-hospital').html('<option value="">Todos los hospitales</option>');
+    table.ajax.reload();
+  });
+});
+
+function escName(s) {
+  return (s || '').replace(/'/g, "\\'");
+}
+
 function confirmDelete(id, name, type) {
   Swal.fire({
     title: '¿Eliminar ' + name + '?',

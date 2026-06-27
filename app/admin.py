@@ -545,13 +545,11 @@ def estatus_delete(item_id):
 @admin_bp.route("/persons")
 @login_required
 def persons():
-    all_persons = Person.query.all()
     estados = Estado.query.order_by(Estado.nombre).all()
     areas = Area.query.order_by(Area.nombre).all()
     estatuses = Estatus.query.order_by(Estatus.nombre).all()
     return render_template(
         "admin/persons.html",
-        persons=all_persons,
         estados=estados,
         areas=areas,
         estatuses=estatuses,
@@ -617,6 +615,12 @@ def upload_persons():
             existing = None
             if cedula:
                 existing = Person.query.filter_by(cedula=cedula).first()
+            if not existing and not cedula:
+                existing = Person.query.filter(
+                    Person.nombre.ilike(nombre),
+                    Person.apellido.ilike(apellido),
+                    Person.cedula.is_(None)
+                ).first()
 
             def get_val(key):
                 raw = row.get(col_map.get(key, ""))
@@ -639,7 +643,8 @@ def upload_persons():
                     return False
                 return str(raw).strip().upper() == "S"
 
-            sexo = get_val("sexo")
+            sexo_raw = get_val("sexo")
+            sexo = {"M": "Masculino", "F": "Femenino"}.get(sexo_raw.upper(), sexo_raw) if sexo_raw else ""
             telefono = get_val("telefono")
             estado_salud = get_val("estado_salud")
             nombre_familiar = get_val("nombre_familiar")
@@ -810,9 +815,10 @@ def api_preview_upload():
             except (ValueError, TypeError):
                 row_errors.append("edad debe ser un número entero")
 
-        sexo = get_val(row, "sexo")
+        sexo_raw = get_val(row, "sexo")
+        sexo = {"M": "Masculino", "F": "Femenino"}.get(sexo_raw.upper(), sexo_raw) if sexo_raw else ""
         if sexo and sexo not in ("Masculino", "Femenino"):
-            row_errors.append("sexo debe ser 'Masculino' o 'Femenino'")
+            row_errors.append("sexo debe ser 'Masculino', 'Femenino', 'M' o 'F'")
 
         estatus = normalize_name(get_val(row, "estatus"))
         if estatus and estatus not in estatus_map:
@@ -834,6 +840,21 @@ def api_preview_upload():
 
         cedula_display = cedula_raw if cedula_raw.upper() != "N" else "(sin cédula)"
 
+        if not row_errors:
+            preview_cedula = None if cedula_raw.upper() == "N" else cedula_raw
+            preview_existing = None
+            if preview_cedula:
+                preview_existing = Person.query.filter_by(cedula=preview_cedula).first()
+            if not preview_existing and not preview_cedula and nombre and apellido:
+                preview_existing = Person.query.filter(
+                    Person.nombre.ilike(nombre),
+                    Person.apellido.ilike(apellido),
+                    Person.cedula.is_(None)
+                ).first()
+            action = "Actualizar" if preview_existing else "Crear"
+        else:
+            action = "—"
+
         rows.append(
             {
                 "row": idx + 2,
@@ -851,6 +872,7 @@ def api_preview_upload():
                 "estado": get_val(row, "estado"),
                 "hospital": hospital_nombre,
                 "area": area_nombre,
+                "action": action,
                 "errors": row_errors,
                 "valid": len(row_errors) == 0,
             }
@@ -968,6 +990,49 @@ def delete_person(person_id):
     db.session.commit()
     flash("Persona eliminada", "success")
     return redirect(url_for("admin.persons"))
+
+
+@admin_bp.route("/api/persons/list")
+@login_required
+def api_persons_list():
+    query = Person.query
+    nombre = request.args.get("nombre", "").strip()
+    estado_id = request.args.get("estado_id", "").strip()
+    hospital_id = request.args.get("hospital_id", "").strip()
+    area_id = request.args.get("area_id", "").strip()
+
+    if nombre:
+        query = query.filter(
+            Person.nombre.ilike(f"%{nombre}%") | Person.apellido.ilike(f"%{nombre}%")
+        )
+    if estado_id and estado_id.isdigit():
+        query = query.filter_by(estado_id=int(estado_id))
+    if hospital_id and hospital_id.isdigit():
+        query = query.filter_by(hospital_id=int(hospital_id))
+    if area_id and area_id.isdigit():
+        query = query.filter_by(area_id=int(area_id))
+
+    persons = query.order_by(Person.fecha_registro.desc()).all()
+    data = []
+    for p in persons:
+        data.append({
+            "id": p.id,
+            "nombre": p.nombre or "",
+            "apellido": p.apellido or "",
+            "cedula": p.cedula or "",
+            "edad": p.edad,
+            "sexo": p.sexo or "",
+            "telefono": p.telefono or "",
+            "estado": p.estado.nombre if p.estado else "",
+            "hospital": p.hospital.nombre if p.hospital else "",
+            "area": p.area.nombre if p.area else "",
+            "estatus": p.estatus or "",
+            "tiene_familiar": "Sí" if p.tiene_familiar else "No",
+            "estado_id": p.estado_id,
+            "hospital_id": p.hospital_id,
+            "area_id": p.area_id,
+        })
+    return jsonify(data)
 
 
 @admin_bp.route("/api/persons/<int:person_id>")

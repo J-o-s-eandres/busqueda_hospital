@@ -1,20 +1,48 @@
 from flask import Blueprint, render_template, request, jsonify
-from .models import db, Person, Estado, Hospital, Area, display_name
+from .models import db, Person, Estado, Hospital, Area, AuditLog, display_name
 
 public_bp = Blueprint("public", __name__, url_prefix="/public")
+
+
+def _stats():
+    total_persons = Person.query.count()
+    total_hospitals = Hospital.query.count()
+    total_areas = Area.query.count()
+
+    last_import = (
+        AuditLog.query.filter_by(action="import", target_type="Person")
+        .order_by(AuditLog.created_at.desc())
+        .first()
+    )
+    last_update = (
+        last_import.created_at.strftime("%d/%m/%Y %H:%M") if last_import else None
+    )
+
+    return {
+        "total_persons": total_persons,
+        "total_hospitals": total_hospitals,
+        "total_areas": total_areas,
+        "last_update": last_update,
+    }
 
 
 @public_bp.route("/")
 def index():
     return render_template(
-        "public/search.html", estados=Estado.query.all(), areas=Area.query.all()
+        "public/search.html",
+        estados=Estado.query.all(),
+        areas=Area.query.all(),
+        **_stats(),
     )
 
 
 @public_bp.route("/search")
 def search():
     return render_template(
-        "public/search.html", estados=Estado.query.all(), areas=Area.query.all()
+        "public/search.html",
+        estados=Estado.query.all(),
+        areas=Area.query.all(),
+        **_stats(),
     )
 
 

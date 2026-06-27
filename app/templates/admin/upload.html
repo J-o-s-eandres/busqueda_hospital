@@ -88,6 +88,7 @@
             <th>Nombre</th>
             <th>Apellido</th>
             <th>Cédula</th>
+            <th>Acción</th>
             <th>Sexo</th>
             <th>Edad</th>
             <th>Teléfono</th>
@@ -179,6 +180,7 @@ function renderPreview(data) {
       '<td>' + escapeHtml(r.nombre) + '</td>' +
       '<td>' + escapeHtml(r.apellido) + '</td>' +
       '<td>' + escapeHtml(r.cedula) + '</td>' +
+      '<td><span class="badge bg-' + (r.action === 'Actualizar' ? 'warning' : 'success') + '">' + r.action + '</span></td>' +
       '<td>' + escapeHtml(r.sexo) + '</td>' +
       '<td>' + escapeHtml(r.edad) + '</td>' +
       '<td>' + escapeHtml(r.telefono) + '</td>' +
