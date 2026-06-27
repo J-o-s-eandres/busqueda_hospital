@@ -1,6 +1,10 @@
 ﻿# 🏥 Búsqueda Hospitalaria
 
-Aplicación web para buscar y gestionar información de pacientes hospitalizados durante emergencias o desastres. Cuenta con búsqueda pública, panel administrativo, sincronización con Google Sheets y bot de Telegram.
+Tras el Terremoto que saducio a veneuzela el 24 de Junio del año 2026 las listas de pacientes que eran rescatados se pegaban en las puertas de los hospitales y se difundían en redes sociales sin orden ni control. Una familia solo podía saber si su ser querido estaba en un hospital si tenía la suerte de toparse con una lista donde apareciera.
+
+Este proyecto nació para **unificar y centralizar toda esa información en un solo lugar**. Una forma sencilla, rápida y accesible para que cualquier persona pueda buscar a un paciente sin depender de cadenas de WhatsApp, fotos borrosas o llamadas interminables.
+
+Cuenta con búsqueda pública, panel administrativo con roles, sincronización con Google Sheets y bot de Telegram.
 
 ## 🌐 Uso
 
@@ -65,6 +69,11 @@ Visitar `http://localhost:5000/public/search`
 | `TELEGRAM_BOT_TOKEN`                           | Token del bot de Telegram             |
 | `TELEGRAM_WEBHOOK_URL`                         | URL del webhook del bot               |
 
+
+
 ## 📄 Licencia
 
-MIT
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+Este proyecto está bajo la licencia **MIT**.  
+Consulta el archivo [LICENSE](LICENSE) para más detalles.
